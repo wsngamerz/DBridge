@@ -66,6 +66,7 @@ public class DBridge {
 
     // delay some tasks until after the server has started
     private int delayTimer = 20 * 10; // 10 seconds
+    private Boolean enabled = false;
 
     public DBridge() {
         FMLCommonHandler.instance()
@@ -80,12 +81,23 @@ public class DBridge {
             .isClient()) return;
 
         Config.synchronizeConfiguration(event.getSuggestedConfigurationFile());
-
         DBridge.LOG.info("I am " + DBridge.MOD_NAME + " v" + DBridge.MOD_VERSION);
+
+        if (Config.botToken.isEmpty() || Config.guildId.isEmpty() || Config.channelId.isEmpty()) {
+            DBridge.LOG.error("Configuration is missing required values");
+            this.enabled = false;
+        } else {
+            this.enabled = true;
+        }
     }
 
     @Mod.EventHandler
     public void onServerStarting(FMLServerStartingEvent event) throws InterruptedException {
+        if (!this.enabled) {
+            DBridge.LOG.error("Plugin is disabled due to missing configuration");
+            return;
+        }
+
         this.server = event.getServer();
         this.relay = new Relay(this::sendToMinecraft, this::getPlayerListCommandResponse);
 
@@ -112,17 +124,20 @@ public class DBridge {
 
     @Mod.EventHandler
     public void onServerStarted(FMLServerStartedEvent event) {
+        if (!this.enabled) return;
         DBridge.LOG.info("Server started");
         this.relay.sendToDiscord("Server started");
     }
 
     @Mod.EventHandler
     public void onServerStopping(FMLServerStoppingEvent event) {
+        if (!this.enabled) return;
         this.relay.sendToDiscord("Server stopping");
     }
 
     @SubscribeEvent
     public void onTick(TickEvent.ServerTickEvent event) {
+        if (!this.enabled) return;
         if (this.delayTimer <= 0) return;
         this.delayTimer--;
 
@@ -139,6 +154,7 @@ public class DBridge {
      */
     @SubscribeEvent
     public void onServerChat(ServerChatEvent event) {
+        if (!this.enabled) return;
         String sender = event.username;
         String message = event.message;
         this.relay.sendToDiscord(sender, message);
@@ -146,6 +162,7 @@ public class DBridge {
 
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!this.enabled) return;
         String name = event.player.getDisplayName();
         this.relay.sendToDiscord(name, String.format("*%s joined the game*", name));
         this.updatePlayerListActivity();
@@ -153,6 +170,7 @@ public class DBridge {
 
     @SubscribeEvent
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!this.enabled) return;
         String name = event.player.getDisplayName();
         this.relay.sendToDiscord(name, String.format("*%s left the game*", name));
         this.updatePlayerListActivity();
@@ -160,6 +178,7 @@ public class DBridge {
 
     @SubscribeEvent
     public void onAchievement(AchievementEvent event) {
+        if (!this.enabled) return;
         Achievement achievement = event.achievement;
         StatisticsFile statisticsFile = server.getConfigurationManager()
             .func_152602_a(event.entityPlayer);
@@ -176,6 +195,7 @@ public class DBridge {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onDeath(LivingDeathEvent event) {
+        if (!this.enabled) return;
         final EntityLivingBase living = event.entityLiving;
         if (!isRealPlayer(living)) return;
 
@@ -194,6 +214,7 @@ public class DBridge {
 
     @SubscribeEvent
     public void onQuestEvent(QuestEvent event) {
+        if (!this.enabled) return;
         if (event.getType() != QuestEvent.Type.COMPLETED) return;
 
         UUID playerID = event.getPlayerID();
