@@ -15,9 +15,15 @@ public class Config {
         Configuration configuration = new Configuration(configFile);
 
         botToken = configuration.getString("botToken", Configuration.CATEGORY_GENERAL, "", "The discord bot's token");
-        guildId = configuration.getString("guildId", Configuration.CATEGORY_GENERAL, "", "The id of the guild to connect to");
-        channelId = configuration.getString("channelId", Configuration.CATEGORY_GENERAL, "", "The id of the channel to bridge between");
-        webhookUrl = configuration.getString("webhookUrl", Configuration.CATEGORY_GENERAL, "", "The webhook url to send messages to. If this is blank, the bot will be used instead");
+        guildId = configuration
+            .getString("guildId", Configuration.CATEGORY_GENERAL, "", "The id of the guild to connect to");
+        channelId = configuration
+            .getString("channelId", Configuration.CATEGORY_GENERAL, "", "The id of the channel to bridge between");
+        webhookUrl = configuration.getString(
+            "webhookUrl",
+            Configuration.CATEGORY_GENERAL,
+            "",
+            "The webhook url to send messages to. If this is blank, the bot will be used instead");
 
         if (configuration.hasChanged()) {
             configuration.save();

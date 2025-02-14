@@ -1,20 +1,13 @@
 package com.williamneild.dbridge;
 
-import betterquesting.api.api.QuestingAPI;
-import betterquesting.api.events.QuestEvent;
-import betterquesting.api.properties.NativeProps;
-import betterquesting.api.questing.IQuest;
-import betterquesting.questing.QuestDatabase;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.event.FMLServerStartedEvent;
-import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
-import cpw.mods.fml.common.eventhandler.EventPriority;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
+import java.lang.reflect.Field;
+import java.util.IllegalFormatException;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.command.ICommandManager;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.ServerCommandManager;
@@ -35,23 +28,32 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.AchievementEvent;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
-import java.lang.reflect.Field;
-import java.util.IllegalFormatException;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.BiConsumer;
+import betterquesting.api.api.QuestingAPI;
+import betterquesting.api.events.QuestEvent;
+import betterquesting.api.properties.NativeProps;
+import betterquesting.api.questing.IQuest;
+import betterquesting.questing.QuestDatabase;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartedEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 
 @Mod(
     modid = DBridge.MOD_ID,
     version = DBridge.MOD_VERSION,
     name = DBridge.MOD_NAME,
     acceptedMinecraftVersions = "[1.7.10]",
-    acceptableRemoteVersions = "*"
-)
+    acceptableRemoteVersions = "*")
 public class DBridge {
 
     public static final String MOD_ID = "dbridge";
@@ -66,13 +68,16 @@ public class DBridge {
     private int delayTimer = 20 * 10; // 10 seconds
 
     public DBridge() {
-        FMLCommonHandler.instance().bus().register(this);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(this);
         MinecraftForge.EVENT_BUS.register(this);
     }
 
     @Mod.EventHandler
     public void onPreInitialization(FMLPreInitializationEvent event) {
-        if (event.getSide().isClient()) return;
+        if (event.getSide()
+            .isClient()) return;
 
         Config.synchronizeConfiguration(event.getSuggestedConfigurationFile());
 
@@ -87,7 +92,9 @@ public class DBridge {
         // wrap the command manager so we can get events from certain commands such as /say
         ICommandManager commandManager = this.server.getCommandManager();
         if (commandManager instanceof ServerCommandManager serverCommandManager) {
-            ServerCommandManagerWrapper wrapper = new ServerCommandManagerWrapper(serverCommandManager, this.relay::sendToDiscord);
+            ServerCommandManagerWrapper wrapper = new ServerCommandManagerWrapper(
+                serverCommandManager,
+                this.relay::sendToDiscord);
 
             try {
                 Field commandManagerField = MinecraftServer.class.getDeclaredField("commandManager");
@@ -113,7 +120,6 @@ public class DBridge {
     public void onServerStopping(FMLServerStoppingEvent event) {
         this.relay.sendToDiscord("Server stopping");
     }
-
 
     @SubscribeEvent
     public void onTick(TickEvent.ServerTickEvent event) {
@@ -155,12 +161,14 @@ public class DBridge {
     @SubscribeEvent
     public void onAchievement(AchievementEvent event) {
         Achievement achievement = event.achievement;
-        StatisticsFile statisticsFile = server.getConfigurationManager().func_152602_a(event.entityPlayer);
+        StatisticsFile statisticsFile = server.getConfigurationManager()
+            .func_152602_a(event.entityPlayer);
         boolean hasRequirements = statisticsFile.canUnlockAchievement(achievement);
         boolean alreadyObtained = statisticsFile.hasAchievementUnlocked(achievement);
         if (hasRequirements && !alreadyObtained) {
             String name = event.entityPlayer.getDisplayName();
-            String title = achievement.func_150951_e().getUnformattedText();
+            String title = achievement.func_150951_e()
+                .getUnformattedText();
             String description = getAchievementDescription(achievement);
             this.relay.sendToDiscord(name, String.format("*%s has earned the achievement [%s]*", name, title));
         }
@@ -220,14 +228,17 @@ public class DBridge {
         DBridge.LOG.info("DC -> MC: {}", content);
 
         ChatComponentText chatMessage = new ChatComponentText(content);
-        this.server.getConfigurationManager().sendChatMsgImpl(chatMessage, false);
+        this.server.getConfigurationManager()
+            .sendChatMsgImpl(chatMessage, false);
     }
 
     public String getPlayerListCommandResponse() {
         Integer playerCount = this.server.getCurrentPlayerCount();
         Integer maxPlayers = this.server.getMaxPlayers();
-        String[] players = this.server.getConfigurationManager().getAllUsernames();
-        return String.format("There are %d/%d players online:\n%s", playerCount, maxPlayers, String.join(", ", players));
+        String[] players = this.server.getConfigurationManager()
+            .getAllUsernames();
+        return String
+            .format("There are %d/%d players online:\n%s", playerCount, maxPlayers, String.join(", ", players));
     }
 
     public void updatePlayerListActivity() {
@@ -242,6 +253,7 @@ public class DBridge {
      * Wraps the command manager so we can intercept and listen for certain commands
      */
     public static class ServerCommandManagerWrapper extends ServerCommandManager {
+
         private final ServerCommandManager delegate;
         private final BiConsumer<String, String> sendToDiscord;
 
@@ -277,8 +289,7 @@ public class DBridge {
         }
         if (entity instanceof EntityLiving) {
             EntityLiving living = (EntityLiving) entity;
-            if (living.hasCustomNameTag())
-                return living.getCustomNameTag();
+            if (living.hasCustomNameTag()) return living.getCustomNameTag();
         }
         return entity.getCommandSenderName();
     }
@@ -287,13 +298,14 @@ public class DBridge {
         try {
             Field achievementDescriptionField = Achievement.class.getDeclaredField("achievementDescription");
             achievementDescriptionField.setAccessible(true);
-            String translated = StatCollector.translateToLocal(achievementDescriptionField.get(achievement).toString());
+            String translated = StatCollector.translateToLocal(
+                achievementDescriptionField.get(achievement)
+                    .toString());
             try {
                 if (achievement.statId.equals("achievement.openInventory")) {
                     return String.format(translated, 'E');
                 }
-            } catch (IllegalFormatException ignored) {
-            }
+            } catch (IllegalFormatException ignored) {}
             return translated;
         } catch (NoSuchFieldException e) {
             return "Err: field not found";

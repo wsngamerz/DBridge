@@ -1,9 +1,9 @@
 package com.williamneild.dbridge;
 
-import club.minnced.discord.webhook.WebhookClient;
-import club.minnced.discord.webhook.WebhookClientBuilder;
-import club.minnced.discord.webhook.send.WebhookMessage;
-import club.minnced.discord.webhook.send.WebhookMessageBuilder;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -20,48 +20,44 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.minecraft.util.ResourceLocation;
+
+import club.minnced.discord.webhook.WebhookClient;
+import club.minnced.discord.webhook.WebhookClientBuilder;
+import club.minnced.discord.webhook.send.WebhookMessage;
+import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import serverutils.ServerUtilitiesLeaderboards;
 import serverutils.data.Leaderboard;
 import serverutils.lib.data.ForgePlayer;
 import serverutils.lib.data.Universe;
 import serverutils.lib.util.StringUtils;
 
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 public class Relay extends ListenerAdapter {
 
     private final Consumer<String> sendToMinecraft;
     private final Supplier<String> getPlayerListCommandResponse;
 
-    private JDA jda;
+    private final JDA jda;
     private WebhookClient webhookClient;
-    private Guild guild;
+    private final Guild guild;
     private GuildMessageChannel channel;
-    private final EnumSet<GatewayIntent> intents = EnumSet.of(
-        GatewayIntent.GUILD_MESSAGES,
-        GatewayIntent.MESSAGE_CONTENT
-    );
 
     Set<Command.Choice> leaderboardChoices = new HashSet<>();
 
-    public Relay(Consumer<String> sendToMinecraft, Supplier<String> getPlayerListCommandResponse) throws InterruptedException {
+    public Relay(Consumer<String> sendToMinecraft, Supplier<String> getPlayerListCommandResponse)
+        throws InterruptedException {
         this.sendToMinecraft = sendToMinecraft;
         this.getPlayerListCommandResponse = getPlayerListCommandResponse;
 
-
         DBridge.LOG.info("Logging in to Discord");
-        this.jda = JDABuilder
-            .createLight(Config.botToken, intents)
+        EnumSet<GatewayIntent> intents = EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
+        this.jda = JDABuilder.createLight(Config.botToken, intents)
             .addEventListeners(this)
             .setActivity(Activity.playing("Minecraft"))
             .build();
 
         // output the ping to the log
-        jda.getRestPing().queue(ping ->
-            DBridge.LOG.info("Logged in with ping: {}", ping)
-        );
+        jda.getRestPing()
+            .queue(ping -> DBridge.LOG.info("Logged in with ping: {}", ping));
 
         // wait for the bot to be logged in
         jda.awaitReady();
@@ -96,31 +92,30 @@ public class Relay extends ListenerAdapter {
 
     /**
      * Initialize the commands
-     * This has to be separate since server utilities doesn't populate the leaderboards until after the server has started
+     * This has to be separate since server utilities doesn't populate the leaderboards until after the server has
+     * started
      */
     public void initCommands() {
         DBridge.LOG.info("Registering leaderboard commands");
 
         // find all the registered leaderboard types and add them to the set
-        ServerUtilitiesLeaderboards.LEADERBOARDS.forEach(
-            (key, value) -> {
-                String k = key.toString();
-                leaderboardChoices.add(new Command.Choice(k, k));
-            }
-        );
+        ServerUtilitiesLeaderboards.LEADERBOARDS.forEach((key, value) -> {
+            String k = key.toString();
+            leaderboardChoices.add(new Command.Choice(k, k));
+        });
 
         DBridge.LOG.info("Leaderboards: {}", ServerUtilitiesLeaderboards.LEADERBOARDS);
         DBridge.LOG.info("Choices: {}", leaderboardChoices);
 
-        this.guild.updateCommands().addCommands(
-            Commands.slash("leaderboard", "Show the leaderboard")
-                .addOptions(
-                    new OptionData(OptionType.STRING, "type", "The type of leaderboard")
-                        .addChoices(leaderboardChoices)
-                        .setRequired(true)
-                ),
-            Commands.slash("list", "Show the players online")
-        ).queue();
+        this.guild.updateCommands()
+            .addCommands(
+                Commands.slash("leaderboard", "Show the leaderboard")
+                    .addOptions(
+                        new OptionData(OptionType.STRING, "type", "The type of leaderboard")
+                            .addChoices(leaderboardChoices)
+                            .setRequired(true)),
+                Commands.slash("list", "Show the players online"))
+            .queue();
     }
 
     /**
@@ -130,10 +125,12 @@ public class Relay extends ListenerAdapter {
      */
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        if (event.getAuthor().isBot()) return;
+        if (event.getAuthor()
+            .isBot()) return;
 
         Message message = event.getMessage();
-        String author = message.getAuthor().getGlobalName();
+        String author = message.getAuthor()
+            .getGlobalName();
         String content = message.getContentDisplay();
 
         this.sendToMinecraft.accept(String.format("[%s] %s", author, content));
@@ -144,10 +141,10 @@ public class Relay extends ListenerAdapter {
         String eventName = event.getName();
         if (eventName.equals("leaderboard")) {
             if (leaderboardChoices.isEmpty()) {
-                event.reply("Leaderboards are not available yet").queue();
+                event.reply("Leaderboards are not available yet")
+                    .queue();
                 return;
             }
-
 
             OptionMapping type = event.getOption("type");
             if (type == null) return;
@@ -155,38 +152,46 @@ public class Relay extends ListenerAdapter {
 
             ResourceLocation leaderboardResource = new ResourceLocation(typeString);
             Leaderboard leaderboard = ServerUtilitiesLeaderboards.LEADERBOARDS.get(leaderboardResource);
-            List<ForgePlayer> players = new ArrayList<>(Universe.get().getPlayers());
+            List<ForgePlayer> players = new ArrayList<>(
+                Universe.get()
+                    .getPlayers());
             players.sort(leaderboard.getComparator());
 
             StringBuilder messageBuilder = new StringBuilder();
-            messageBuilder
-                .append("Leaderboard: ")
-                .append(leaderboard.getTitle().getUnformattedText())
+            messageBuilder.append("Leaderboard: ")
+                .append(
+                    leaderboard.getTitle()
+                        .getUnformattedText())
                 .append("\n");
             for (int i = 0; i < players.size(); i++) {
                 ForgePlayer p = players.get(i);
-                String value = "- #" +
-                    StringUtils.add0s(i + 1, players.size()) +
-                    " " +
-                    p.getName() +
-                    ": " +
-                    leaderboard.createValue(p).getUnformattedText();
-                messageBuilder.append(value).append("\n");
+                String value = "- #" + StringUtils.add0s(i + 1, players.size())
+                    + " "
+                    + p.getName()
+                    + ": "
+                    + leaderboard.createValue(p)
+                        .getUnformattedText();
+                messageBuilder.append(value)
+                    .append("\n");
             }
 
-            event.reply(messageBuilder.toString()).queue();
+            event.reply(messageBuilder.toString())
+                .queue();
         } else if (eventName.equals("list")) {
-            event.reply(this.getPlayerListCommandResponse.get()).queue();
+            event.reply(this.getPlayerListCommandResponse.get())
+                .queue();
         }
     }
 
     public void setActivity(String activity) {
-        this.jda.getPresence().setActivity(Activity.playing(activity));
+        this.jda.getPresence()
+            .setActivity(Activity.playing(activity));
     }
 
     public void sendToDiscord(String message) {
         DBridge.LOG.info("MC -> DC[b]: {}", message);
-        this.channel.sendMessage(message).queue();
+        this.channel.sendMessage(message)
+            .queue();
     }
 
     public void sendToDiscord(String sender, String message) {
@@ -197,8 +202,7 @@ public class Relay extends ListenerAdapter {
             String avatarUrl = "https://mineskin.eu/avatar/" + sender;
             if (sender.equals("Server")) avatarUrl = "https://mineskin.eu/avatar/MHF_Exclamation";
 
-            WebhookMessage webhookMessage = new WebhookMessageBuilder()
-                .setUsername(sender)
+            WebhookMessage webhookMessage = new WebhookMessageBuilder().setUsername(sender)
                 .setAvatarUrl(avatarUrl)
                 .setContent(message)
                 .build();
