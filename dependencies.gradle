@@ -39,6 +39,8 @@ dependencies {
     api("com.github.GTNewHorizons:BetterQuesting:3.7.3-GTNH:dev")
     api("com.github.GTNewHorizons:ServerUtilities:2.1.29:dev")
 
-    implementation("net.dv8tion:JDA:5.3.0")
-    implementation("club.minnced:discord-webhooks:0.8.4")
+    shadowImplementation("net.dv8tion:JDA:5.3.0") {
+        exclude module: "opus-java"
+    }
+    shadowImplementation("club.minnced:discord-webhooks:0.8.4")
 }
