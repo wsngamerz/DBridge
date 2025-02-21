@@ -1,7 +1,5 @@
 package com.williamneild.dbridge;
 
-import java.lang.reflect.Field;
-
 import net.minecraft.command.ICommandManager;
 import net.minecraft.command.ServerCommandManager;
 import net.minecraft.server.MinecraftServer;
@@ -114,18 +112,9 @@ public class DBridge {
         // wrap the command manager so we can get events from certain commands such as /say
         ICommandManager commandManager = this.server.getCommandManager();
         if (commandManager instanceof ServerCommandManager serverCommandManager) {
-            ServerCommandManagerWrapper wrapper = new ServerCommandManagerWrapper(
+            this.server.commandManager = new ServerCommandManagerWrapper(
                 serverCommandManager,
                 this.relay::sendToDiscord);
-
-            try {
-                Field commandManagerField = MinecraftServer.class.getDeclaredField("commandManager");
-                commandManagerField.setAccessible(true);
-                commandManagerField.set(this.server, wrapper);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                DBridge.LOG.error("Failed to wrap command manager", e);
-            }
-
             DBridge.LOG.info("Wrapped command manager");
         } else {
             DBridge.LOG.error("Failed to wrap command manager");

@@ -1,6 +1,5 @@
 package com.williamneild.dbridge.listeners;
 
-import java.lang.reflect.Field;
 import java.util.IllegalFormatException;
 
 import net.minecraft.server.management.ServerConfigurationManager;
@@ -41,22 +40,12 @@ public class PlayerAchievementListener {
     }
 
     private String getAchievementDescription(Achievement achievement) {
+        String translated = StatCollector.translateToLocal(achievement.achievementDescription);
         try {
-            Field achievementDescriptionField = Achievement.class.getDeclaredField("achievementDescription");
-            achievementDescriptionField.setAccessible(true);
-            String translated = StatCollector.translateToLocal(
-                achievementDescriptionField.get(achievement)
-                    .toString());
-            try {
-                if (achievement.statId.equals("achievement.openInventory")) {
-                    return String.format(translated, 'E');
-                }
-            } catch (IllegalFormatException ignored) {}
-            return translated;
-        } catch (NoSuchFieldException e) {
-            return "Err: field not found";
-        } catch (IllegalAccessException e) {
-            return "Err: access denied";
-        }
+            if (achievement.statId.equals("achievement.openInventory")) {
+                return String.format(translated, 'E');
+            }
+        } catch (IllegalFormatException ignored) {}
+        return translated;
     }
 }
