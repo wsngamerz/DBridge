@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageType;
+import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -24,6 +26,8 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.minecraft.util.ResourceLocation;
+
+import org.jetbrains.annotations.NotNull;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
@@ -133,11 +137,40 @@ public class Relay extends ListenerAdapter {
             .isBot()) return;
 
         Message message = event.getMessage();
-        String author = message.getAuthor()
-            .getGlobalName();
+        MessageType type = message.getType();
+
+        if (type != MessageType.DEFAULT && type != MessageType.INLINE_REPLY) return;
+
+        User author = message.getAuthor();
+        String authorName = author.getEffectiveName();
         String content = message.getContentDisplay();
 
-        this.sendToMinecraft.accept(String.format("[%s] %s", author, content));
+        if (type == MessageType.INLINE_REPLY) {
+            String replyAuthorName = getReplyAuthorName(message);
+            content = String.format("[%s (Reply to %s)] %s", authorName, replyAuthorName, content);
+        } else {
+            content = String.format("[%s] %s", authorName, content);
+        }
+
+        this.sendToMinecraft.accept(content);
+    }
+
+    @NotNull
+    private static String getReplyAuthorName(Message message) {
+        Message referencedMessage = message.getReferencedMessage();
+        String replyAuthorName;
+
+        if (referencedMessage == null) {
+            replyAuthorName = "Unknown";
+        } else if (referencedMessage.isWebhookMessage()) {
+            User replyAuthor = referencedMessage.getAuthor();
+            replyAuthorName = replyAuthor.getName();
+        } else {
+            User replyAuthor = referencedMessage.getAuthor();
+            replyAuthorName = replyAuthor.getEffectiveName();
+        }
+
+        return replyAuthorName;
     }
 
     @Override
