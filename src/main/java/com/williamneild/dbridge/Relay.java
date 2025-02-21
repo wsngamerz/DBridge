@@ -138,21 +138,34 @@ public class Relay extends ListenerAdapter {
 
         Message message = event.getMessage();
         MessageType type = message.getType();
+        List<Message.Attachment> attachments = message.getAttachments();
 
         if (type != MessageType.DEFAULT && type != MessageType.INLINE_REPLY) return;
 
         User author = message.getAuthor();
         String authorName = author.getEffectiveName();
-        String content = message.getContentDisplay();
 
+        StringBuilder messageBuilder = new StringBuilder();
+
+        // author name (with replies)
         if (type == MessageType.INLINE_REPLY) {
             String replyAuthorName = getReplyAuthorName(message);
-            content = String.format("[%s (Reply to %s)] %s", authorName, replyAuthorName, content);
+            messageBuilder.append(String.format("[%s (Reply to %s)]", authorName, replyAuthorName));
         } else {
-            content = String.format("[%s] %s", authorName, content);
+            messageBuilder.append(String.format("[%s]", authorName));
         }
 
-        this.sendToMinecraft.accept(content);
+        // message content
+        String content = message.getContentDisplay();
+        if (!content.isEmpty()) messageBuilder.append(String.format(" %s", content));
+
+        // add the attachment types to the message
+        for (Message.Attachment attachment : attachments) {
+            String typeString = attachment.isImage() ? "image" : (attachment.isVideo() ? "video" : "file");
+            messageBuilder.append(String.format(" <%s>", typeString));
+        }
+
+        this.sendToMinecraft.accept(messageBuilder.toString());
     }
 
     @NotNull
