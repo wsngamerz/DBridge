@@ -70,12 +70,8 @@ public class DBridge {
 
         // add listeners
         MinecraftForge.EVENT_BUS.register(new PlayerChatListener(this));
-        FMLCommonHandler.instance()
-            .bus()
-            .register(new PlayerAchievementListener(this, this.server.getConfigurationManager()));
-        FMLCommonHandler.instance()
-            .bus()
-            .register(new PlayerDeathListener(this));
+        MinecraftForge.EVENT_BUS.register(new PlayerAchievementListener(this, this.server.getConfigurationManager()));
+        MinecraftForge.EVENT_BUS.register(new PlayerDeathListener(this));
         FMLCommonHandler.instance()
             .bus()
             .register(new PlayerJoinLeaveListener(this));
