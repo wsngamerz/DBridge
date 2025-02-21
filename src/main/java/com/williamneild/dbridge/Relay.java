@@ -193,14 +193,14 @@ public class Relay extends ListenerAdapter {
     }
 
     public void sendToDiscord(String message) {
-        DBridge.LOG.info("MC -> DC[b]: {}", message);
+        DBridge.LOG.debug("MC -> DC[b]: {}", message);
         this.channel.sendMessage(message)
             .queue();
     }
 
     public void sendToDiscord(String sender, String message) {
         if (this.webhookClient != null) {
-            DBridge.LOG.info("MC -> DC[w]: '{}': {}", sender, message);
+            DBridge.LOG.debug("MC -> DC[w]: '{}': {}", sender, message);
 
             // set the avatar url to the player's skin, override for the server
             String avatarUrl = "https://mineskin.eu/avatar/" + sender;
