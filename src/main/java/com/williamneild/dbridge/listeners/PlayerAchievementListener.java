@@ -34,7 +34,9 @@ public class PlayerAchievementListener {
             String title = achievement.func_150951_e()
                 .getUnformattedText();
             String description = getAchievementDescription(achievement);
-            this.dbridge.sendToDiscord(name, String.format("*%s has earned the achievement [%s]*", name, title));
+            this.dbridge.sendToDiscord(
+                name,
+                String.format("*%s has earned the achievement [%s]: %s*", name, title, description));
         }
     }
 
