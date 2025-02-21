@@ -43,4 +43,5 @@ dependencies {
         exclude module: "opus-java"
     }
     shadowImplementation("club.minnced:discord-webhooks:0.8.4")
+    shadowImplementation("com.vdurmont:emoji-java:5.1.1")
 }

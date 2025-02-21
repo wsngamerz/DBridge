@@ -29,6 +29,8 @@ import net.minecraft.util.ResourceLocation;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.vdurmont.emoji.EmojiParser;
+
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.send.WebhookMessage;
@@ -156,12 +158,12 @@ public class Relay extends ListenerAdapter {
         }
 
         // message content
-        String content = message.getContentDisplay();
+        String content = EmojiParser.parseToAliases(message.getContentDisplay());
         if (!content.isEmpty()) messageBuilder.append(String.format(" %s", content));
 
         // add the attachment types to the message
         for (Message.Attachment attachment : attachments) {
-            String typeString = attachment.isImage() ? "image" : (attachment.isVideo() ? "video" : "file");
+            String typeString = attachment.isImage() ? "Image" : (attachment.isVideo() ? "Video" : "File");
             messageBuilder.append(String.format(" <%s>", typeString));
         }
 
