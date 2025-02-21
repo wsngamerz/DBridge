@@ -26,17 +26,18 @@ public class PlayerAchievementListener {
     public void onAchievement(AchievementEvent event) {
         Achievement achievement = event.achievement;
         StatisticsFile statisticsFile = serverConfigurationManager.func_152602_a(event.entityPlayer);
+
         boolean hasRequirements = statisticsFile.canUnlockAchievement(achievement);
         boolean alreadyObtained = statisticsFile.hasAchievementUnlocked(achievement);
-        if (hasRequirements && !alreadyObtained) {
-            String name = event.entityPlayer.getDisplayName();
-            String title = achievement.func_150951_e()
-                .getUnformattedText();
-            String description = getAchievementDescription(achievement);
-            this.dbridge.sendToDiscord(
-                name,
-                String.format("*%s has earned the achievement [%s]: %s*", name, title, description));
-        }
+        if (!hasRequirements || alreadyObtained) return;
+
+        String name = event.entityPlayer.getDisplayName();
+        String title = achievement.func_150951_e()
+            .getUnformattedText();
+        String description = getAchievementDescription(achievement);
+
+        this.dbridge
+            .sendToDiscord(name, String.format("*%s has earned the achievement [%s]: %s*", name, title, description));
     }
 
     private String getAchievementDescription(Achievement achievement) {
