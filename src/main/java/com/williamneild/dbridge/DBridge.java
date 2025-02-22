@@ -32,6 +32,7 @@ import cpw.mods.fml.common.event.FMLServerStartedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.event.FMLServerStoppingEvent;
+import it.unimi.dsi.fastutil.Pair;
 
 @Mod(
     modid = DBridge.MOD_ID,
@@ -137,7 +138,7 @@ public class DBridge {
         public String sender = "";
         public String discordId = "";
         public String replyAuthor = "";
-        public List<String> attachments = new ArrayList<>();
+        public List<Pair<String, String>> attachments = new ArrayList<>();
 
         public MinecraftChatMessage(String content) {
             this.content = content;
@@ -200,13 +201,20 @@ public class DBridge {
 
         // attachments
         if (!message.attachments.isEmpty()) {
-            StringBuilder attachmentsContent = new StringBuilder();
             for (int i = 0; i < message.attachments.size(); i++) {
-                attachmentsContent.append(String.format(" <%s>", message.attachments.get(i)));
+                Pair<String, String> attachment = message.attachments.get(i);
+                ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.OPEN_URL, attachment.second());
+                HoverEvent hoverEvent = new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    new ChatComponentText("View Attachment"));
+                ChatStyle chatStyle = new ChatStyle().setColor(EnumChatFormatting.GOLD)
+                    .setChatClickEvent(clickEvent)
+                    .setChatHoverEvent(hoverEvent);
+                IChatComponent attachmentComponent = new ChatComponentText(String.format(" <%s>", attachment.first()))
+                    .setChatStyle(chatStyle);
+
+                rootMessage.appendSibling(attachmentComponent);
             }
-            IChatComponent attachmentComponent = new ChatComponentText(attachmentsContent.toString())
-                .setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW));
-            rootMessage.appendSibling(attachmentComponent);
         }
 
         this.server.getConfigurationManager()

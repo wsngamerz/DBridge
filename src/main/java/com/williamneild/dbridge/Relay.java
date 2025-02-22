@@ -34,6 +34,7 @@ import com.vdurmont.emoji.EmojiParser;
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
+import it.unimi.dsi.fastutil.Pair;
 import serverutils.ServerUtilitiesLeaderboards;
 import serverutils.data.Leaderboard;
 import serverutils.lib.data.ForgePlayer;
@@ -158,7 +159,7 @@ public class Relay extends ListenerAdapter {
         // add the attachment types to the message
         for (Message.Attachment attachment : attachments) {
             String typeString = attachment.isImage() ? "Image" : (attachment.isVideo() ? "Video" : "File");
-            chatMessage.attachments.add(typeString);
+            chatMessage.attachments.add(Pair.of(typeString, attachment.getUrl()));
         }
 
         this.sendToMinecraft.accept(chatMessage);
