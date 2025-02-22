@@ -36,8 +36,10 @@ public class PlayerAchievementListener {
             .getUnformattedText();
         String description = getAchievementDescription(achievement);
 
-        this.dbridge
-            .sendToDiscord(name, String.format("*%s has earned the achievement [%s]: %s*", name, title, description));
+        this.dbridge.sendEmbedToDiscord(
+            name,
+            String.format("*%s has earned the achievement [%s]: %s*", name, title, description),
+            DBridge.PURPLE);
     }
 
     private String getAchievementDescription(Achievement achievement) {

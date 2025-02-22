@@ -47,6 +47,12 @@ public class DBridge {
     public static final String MOD_VERSION = Tags.VERSION;
     public static final Logger LOG = LogManager.getLogger(MOD_ID);
 
+    public static final int GREEN = 5763719;
+    public static final int BLUE = 3447003;
+    public static final int RED = 15548997;
+    public static final int GOLD = 15844367;
+    public static final int PURPLE = 10181046;
+
     private boolean isEnabled = true;
     private MinecraftServer server;
     private Relay relay;
@@ -98,21 +104,21 @@ public class DBridge {
     public void onServerStarted(FMLServerStartedEvent event) {
         if (!isEnabled) return;
         DBridge.LOG.info("Server started");
-        this.relay.sendToDiscord("Server started");
+        this.relay.sendEmbedToDiscord("Server", "Server started", DBridge.BLUE);
     }
 
     @Mod.EventHandler
     public void onServerStopping(FMLServerStoppingEvent event) {
         if (!isEnabled) return;
         DBridge.LOG.info("Server stopping");
-        this.relay.sendToDiscord("Server stopping");
+        this.relay.sendEmbedToDiscord("Server", "Server stopping", DBridge.BLUE);
     }
 
     @Mod.EventHandler
     public void onServerStopped(FMLServerStoppedEvent event) {
         if (!isEnabled) return;
         DBridge.LOG.info("Server stopped");
-        this.relay.sendToDiscord("Server stopped");
+        this.relay.sendEmbedToDiscord("Server", "Server stopped", DBridge.BLUE);
     }
 
     public void initCommands() {
@@ -225,6 +231,10 @@ public class DBridge {
         this.relay.sendToDiscord(playerName, content);
     }
 
+    public void sendEmbedToDiscord(String sender, String content, int color) {
+        this.relay.sendEmbedToDiscord(sender, content, color);
+    }
+
     public void setActivity(String message) {
         this.relay.setActivity(message);
     }
@@ -239,7 +249,7 @@ public class DBridge {
     }
 
     public void processPlayerJoin(String playerName) {
-        this.sendToDiscord(playerName, String.format("*%s joined the game*", playerName));
+        this.relay.sendEmbedToDiscord(playerName, String.format("*%s joined the game*", playerName), DBridge.GREEN);
 
         Integer playerCount = this.server.getCurrentPlayerCount();
         Integer maxPlayers = this.server.getMaxPlayers();
@@ -249,7 +259,7 @@ public class DBridge {
     }
 
     public void processPlayerLeave(String playerName) {
-        this.sendToDiscord(playerName, String.format("*%s left the game*", playerName));
+        this.relay.sendEmbedToDiscord(playerName, String.format("*%s left the game*", playerName), DBridge.RED);
 
         Integer playerCount = this.server.getCurrentPlayerCount() - 1;
         Integer maxPlayers = this.server.getMaxPlayers();

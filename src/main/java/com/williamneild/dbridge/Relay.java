@@ -33,6 +33,7 @@ import com.vdurmont.emoji.EmojiParser;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
+import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import it.unimi.dsi.fastutil.Pair;
 import serverutils.ServerUtilitiesLeaderboards;
@@ -235,10 +236,16 @@ public class Relay extends ListenerAdapter {
             .setActivity(Activity.playing(activity));
     }
 
-    public void sendToDiscord(String message) {
-        DBridge.LOG.debug("MC -> DC[b]: {}", message);
-        this.channel.sendMessage(message)
-            .queue();
+    public void sendEmbedToDiscord(String sender, String message, Integer color) {
+        String avatarUrl = "https://mineskin.eu/avatar/" + sender;
+        if (sender.equals("Server")) avatarUrl = "https://mineskin.eu/avatar/MHF_Exclamation";
+
+        WebhookEmbedBuilder embedBuilder = new WebhookEmbedBuilder().setColor(color)
+            .setDescription(message);
+        WebhookMessageBuilder messageBuilder = new WebhookMessageBuilder().addEmbeds(embedBuilder.build())
+            .setUsername(sender)
+            .setAvatarUrl(avatarUrl);
+        this.webhookClient.send(messageBuilder.build());
     }
 
     public void sendToDiscord(String sender, String message) {
