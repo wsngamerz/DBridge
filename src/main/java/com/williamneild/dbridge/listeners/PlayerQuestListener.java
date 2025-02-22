@@ -47,7 +47,7 @@ public class PlayerQuestListener {
             // send quest completion message to both Discord and Minecraft chats
             String message = String.format("%s has completed the quest [%s]", player.getDisplayName(), questName);
             this.dbridge.sendToDiscord(player.getDisplayName(), String.format("*%s*", message));
-            this.dbridge.sendToMinecraft(message);
+            this.dbridge.sendToMinecraft(new DBridge.MinecraftChatMessage(message));
         }
     }
 }

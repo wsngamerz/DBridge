@@ -33,7 +33,6 @@ import com.vdurmont.emoji.EmojiParser;
 
 import club.minnced.discord.webhook.WebhookClient;
 import club.minnced.discord.webhook.WebhookClientBuilder;
-import club.minnced.discord.webhook.send.WebhookMessage;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import serverutils.ServerUtilitiesLeaderboards;
 import serverutils.data.Leaderboard;
@@ -43,7 +42,7 @@ import serverutils.lib.util.StringUtils;
 
 public class Relay extends ListenerAdapter {
 
-    private final Consumer<String> sendToMinecraft;
+    private final Consumer<DBridge.MinecraftChatMessage> sendToMinecraft;
     private final Supplier<String> getPlayerListCommandResponse;
 
     private final JDA jda;
@@ -53,7 +52,7 @@ public class Relay extends ListenerAdapter {
 
     Set<Command.Choice> leaderboardChoices = new HashSet<>();
 
-    public Relay(Consumer<String> sendToMinecraft, Supplier<String> getPlayerListCommandResponse)
+    public Relay(Consumer<DBridge.MinecraftChatMessage> sendToMinecraft, Supplier<String> getPlayerListCommandResponse)
         throws InterruptedException {
         this.sendToMinecraft = sendToMinecraft;
         this.getPlayerListCommandResponse = getPlayerListCommandResponse;
@@ -144,30 +143,25 @@ public class Relay extends ListenerAdapter {
 
         if (type != MessageType.DEFAULT && type != MessageType.INLINE_REPLY) return;
 
-        User author = message.getAuthor();
-        String authorName = author.getEffectiveName();
-
-        StringBuilder messageBuilder = new StringBuilder();
+        // create the chat message object
+        String parsedMessage = EmojiParser.parseToAliases(message.getContentDisplay());
+        DBridge.MinecraftChatMessage chatMessage = new DBridge.MinecraftChatMessage(parsedMessage);
+        chatMessage.discordId = message.getId();
 
         // author name (with replies)
+        chatMessage.sender = message.getAuthor()
+            .getEffectiveName();
         if (type == MessageType.INLINE_REPLY) {
-            String replyAuthorName = getReplyAuthorName(message);
-            messageBuilder.append(String.format("[%s (Reply to %s)]", authorName, replyAuthorName));
-        } else {
-            messageBuilder.append(String.format("[%s]", authorName));
+            chatMessage.replyAuthor = getReplyAuthorName(message);
         }
-
-        // message content
-        String content = EmojiParser.parseToAliases(message.getContentDisplay());
-        if (!content.isEmpty()) messageBuilder.append(String.format(" %s", content));
 
         // add the attachment types to the message
         for (Message.Attachment attachment : attachments) {
             String typeString = attachment.isImage() ? "Image" : (attachment.isVideo() ? "Video" : "File");
-            messageBuilder.append(String.format(" <%s>", typeString));
+            chatMessage.attachments.add(typeString);
         }
 
-        this.sendToMinecraft.accept(messageBuilder.toString());
+        this.sendToMinecraft.accept(chatMessage);
     }
 
     @NotNull
@@ -247,20 +241,47 @@ public class Relay extends ListenerAdapter {
     }
 
     public void sendToDiscord(String sender, String message) {
-        if (this.webhookClient != null) {
-            DBridge.LOG.debug("MC -> DC[w]: '{}': {}", sender, message);
+        if (this.webhookClient == null) return;
+        DBridge.LOG.debug("MC -> DC[w]: '{}': {}", sender, message);
 
-            // set the avatar url to the player's skin, override for the server
-            String avatarUrl = "https://mineskin.eu/avatar/" + sender;
-            if (sender.equals("Server")) avatarUrl = "https://mineskin.eu/avatar/MHF_Exclamation";
+        // set the avatar url to the player's skin, override for the server
+        String avatarUrl = "https://mineskin.eu/avatar/" + sender;
+        if (sender.equals("Server")) avatarUrl = "https://mineskin.eu/avatar/MHF_Exclamation";
 
-            WebhookMessage webhookMessage = new WebhookMessageBuilder().setUsername(sender)
+        WebhookMessageBuilder webhookMessage = new WebhookMessageBuilder().setUsername(sender)
+            .setAvatarUrl(avatarUrl)
+            .setContent(message);
+
+        this.webhookClient.send(webhookMessage.build());
+    }
+
+    public void reply(String messageId, String sender, String message) {
+        String avatarUrl = "https://mineskin.eu/avatar/" + sender;
+        if (sender.equals("Server")) avatarUrl = "https://mineskin.eu/avatar/MHF_Exclamation";
+
+        try {
+            Message replyeeMessage = this.channel.retrieveMessageById(messageId)
+                .complete();
+            User replyeeAuthor = replyeeMessage.getAuthor();
+            WebhookMessageBuilder webhookMessage = new WebhookMessageBuilder().setUsername(sender)
                 .setAvatarUrl(avatarUrl)
-                .setContent(message)
-                .build();
-            this.webhookClient.send(webhookMessage);
-        } else {
-            this.sendToDiscord(String.format("**%s**: %s", sender, message));
+                .setContent(
+                    String.format(
+                        "> <@%s> https://discord.com/channels/%s/%s/%s \n%s",
+                        replyeeAuthor.getId(),
+                        this.guild.getId(),
+                        this.channel.getId(),
+                        messageId,
+                        message));
+
+            this.webhookClient.send(webhookMessage.build());
+
+            DBridge.MinecraftChatMessage minecraftChatMessage = new DBridge.MinecraftChatMessage(message);
+            minecraftChatMessage.replyAuthor = replyeeAuthor.getEffectiveName();
+            minecraftChatMessage.sender = sender;
+            this.sendToMinecraft.accept(minecraftChatMessage);
+        } catch (Exception e) {
+            DBridge.LOG.error(e);
         }
     }
 }

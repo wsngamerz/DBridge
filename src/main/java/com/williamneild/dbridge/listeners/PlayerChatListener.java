@@ -26,7 +26,7 @@ public class PlayerChatListener {
         String message = event.message;
         FMLCommonHandler.instance()
             .getFMLLogger()
-            .info("Chat event received: <{}> {}", sender, message);
+            .debug("Chat event received: <{}> {}", sender, message);
         this.dbridge.sendToDiscord(sender, message);
     }
 }

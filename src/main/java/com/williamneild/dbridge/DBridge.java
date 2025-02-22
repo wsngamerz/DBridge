@@ -1,14 +1,23 @@
 package com.williamneild.dbridge;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.command.ICommandManager;
 import net.minecraft.command.ServerCommandManager;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatStyle;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
 import net.minecraftforge.common.MinecraftForge;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.williamneild.dbridge.commands.RelayReplyCommand;
 import com.williamneild.dbridge.listeners.PlayerAchievementListener;
 import com.williamneild.dbridge.listeners.PlayerChatListener;
 import com.williamneild.dbridge.listeners.PlayerDeathListener;
@@ -78,6 +87,9 @@ public class DBridge {
             .bus()
             .register(new ServerTickListener(this));
 
+        // register commands
+        event.registerServerCommand(new RelayReplyCommand(this.relay));
+
         this.wrapCommandManager();
     }
 
@@ -119,15 +131,86 @@ public class DBridge {
         }
     }
 
+    public static class MinecraftChatMessage {
+
+        public String content;
+        public String sender = "";
+        public String discordId = "";
+        public String replyAuthor = "";
+        public List<String> attachments = new ArrayList<>();
+
+        public MinecraftChatMessage(String content) {
+            this.content = content;
+        }
+    }
+
     /**
      * Sends a chat message to minecraft
      *
-     * @param content The message to send to Minecraft
+     * @param message The message to send to Minecraft
      */
-    public void sendToMinecraft(String content) {
-        ChatComponentText chatMessage = new ChatComponentText(content);
+    public void sendToMinecraft(MinecraftChatMessage message) {
+        IChatComponent rootMessage = new ChatComponentText("");
+
+        // sender
+        if (!message.sender.isEmpty()) {
+            IChatComponent senderComponent = new ChatComponentText("[" + message.sender)
+                .setChatStyle(new ChatStyle().setColor(EnumChatFormatting.DARK_PURPLE));
+
+            if (!message.replyAuthor.isEmpty()) {
+                IChatComponent replyComponent = new ChatComponentText(" (Reply to " + message.replyAuthor + ")")
+                    .setChatStyle(new ChatStyle().setColor(EnumChatFormatting.GRAY));
+                senderComponent = senderComponent.appendSibling(replyComponent);
+            }
+
+            senderComponent = senderComponent
+                .appendSibling(new ChatComponentText("]").setChatStyle(senderComponent.getChatStyle()));
+            rootMessage = rootMessage.appendSibling(senderComponent);
+        }
+
+        // main message
+        if (!message.content.isEmpty()) {
+            String[] messageLines = message.content.split("\n");
+            for (int i = 0; i < messageLines.length; i++) {
+                String line = messageLines[i];
+                IChatComponent messageComponent = new ChatComponentText(" " + line).setChatStyle(new ChatStyle());
+
+                if (!message.discordId.isEmpty()) {
+                    String suggestedCommand = String.format("/relayReply %s ", message.discordId);
+                    String hoverText = "Click to reply";
+                    ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, suggestedCommand);
+                    HoverEvent hoverEvent = new HoverEvent(
+                        HoverEvent.Action.SHOW_TEXT,
+                        new ChatComponentText(hoverText));
+                    ChatStyle chatStyle = messageComponent.getChatStyle()
+                        .setChatClickEvent(clickEvent)
+                        .setChatHoverEvent(hoverEvent);
+                    messageComponent.setChatStyle(chatStyle);
+                }
+
+                rootMessage.appendSibling(messageComponent);
+
+                if ((messageLines.length > 1) && (i != messageLines.length - 1)) {
+                    this.server.getConfigurationManager()
+                        .sendChatMsgImpl(rootMessage, false);
+                    rootMessage = new ChatComponentText("");
+                }
+            }
+        }
+
+        // attachments
+        if (!message.attachments.isEmpty()) {
+            StringBuilder attachmentsContent = new StringBuilder();
+            for (int i = 0; i < message.attachments.size(); i++) {
+                attachmentsContent.append(String.format(" <%s>", message.attachments.get(i)));
+            }
+            IChatComponent attachmentComponent = new ChatComponentText(attachmentsContent.toString())
+                .setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW));
+            rootMessage.appendSibling(attachmentComponent);
+        }
+
         this.server.getConfigurationManager()
-            .sendChatMsgImpl(chatMessage, false);
+            .sendChatMsgImpl(rootMessage, false);
     }
 
     public void sendToDiscord(String playerName, String content) {
