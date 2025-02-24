@@ -80,7 +80,14 @@ public class DBridge {
     public void onServerStarting(FMLServerStartingEvent event) throws InterruptedException {
         if (!isEnabled) return;
         this.server = event.getServer();
-        this.relay = new Relay(this::sendToMinecraft, this::getPlayerListCommandResponse);
+
+        try {
+            this.relay = new Relay(this::sendToMinecraft, this::getPlayerListCommandResponse);
+        } catch (Exception e) {
+            DBridge.LOG.error("Error while creating relay", e);
+            isEnabled = false;
+            return;
+        }
 
         // add listeners
         MinecraftForge.EVENT_BUS.register(new PlayerChatListener(this));
