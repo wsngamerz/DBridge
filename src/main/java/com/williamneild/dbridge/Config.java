@@ -10,6 +10,7 @@ public class Config {
     public static String guildId;
     public static String channelId;
     public static String webhookUrl;
+    public static Boolean forceIPv4;
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
@@ -24,6 +25,8 @@ public class Config {
             Configuration.CATEGORY_GENERAL,
             "",
             "The webhook url to send messages to. If this is blank, the bot will be used instead");
+        forceIPv4 = configuration
+            .getBoolean("forceIPv4", Configuration.CATEGORY_GENERAL, false, "Whether to force IPv4 connection");
 
         if (configuration.hasChanged()) {
             configuration.save();

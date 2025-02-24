@@ -1,12 +1,16 @@
 package com.williamneild.dbridge;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -36,6 +40,8 @@ import club.minnced.discord.webhook.WebhookClientBuilder;
 import club.minnced.discord.webhook.send.WebhookEmbedBuilder;
 import club.minnced.discord.webhook.send.WebhookMessageBuilder;
 import it.unimi.dsi.fastutil.Pair;
+import okhttp3.Dns;
+import okhttp3.OkHttpClient;
 import serverutils.ServerUtilitiesLeaderboards;
 import serverutils.data.Leaderboard;
 import serverutils.lib.data.ForgePlayer;
@@ -59,9 +65,35 @@ public class Relay extends ListenerAdapter {
         this.sendToMinecraft = sendToMinecraft;
         this.getPlayerListCommandResponse = getPlayerListCommandResponse;
 
+        class Ipv4OnlyDns implements Dns {
+
+            @NotNull
+            @Override
+            public List<InetAddress> lookup(@NotNull String hostname) throws UnknownHostException {
+                List<InetAddress> addresses = Dns.SYSTEM.lookup(hostname);
+                return addresses.stream()
+                    .filter(addr -> addr instanceof java.net.Inet4Address) // Only keep IPv4 addresses
+                    .collect(Collectors.toList());
+            }
+        }
+
+        // custom http client for JDA to increase timeouts
+        OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS);
+
+        // optionally filter results to use just ipv4 addresses
+        if (Config.forceIPv4) {
+            httpClientBuilder.dns(new Ipv4OnlyDns());
+        }
+
+        OkHttpClient httpClient = httpClientBuilder.build();
+
         DBridge.LOG.info("Logging in to Discord");
         EnumSet<GatewayIntent> intents = EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
         this.jda = JDABuilder.createLight(Config.botToken, intents)
+            .setHttpClient(httpClient)
+            .setAutoReconnect(true)
             .addEventListeners(this)
             .setActivity(Activity.playing("Minecraft"))
             .build();
