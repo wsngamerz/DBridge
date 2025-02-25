@@ -79,7 +79,7 @@ public class DBridge {
     }
 
     @Mod.EventHandler
-    public void onServerStarting(FMLServerStartingEvent event) throws InterruptedException {
+    public void onServerStarting(FMLServerStartingEvent event) {
         if (!isEnabled) return;
         this.server = event.getServer();
 
