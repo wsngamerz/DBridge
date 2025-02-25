@@ -1,6 +1,10 @@
 # DBridge
 A simple bridge between Discord and a Minecraft GTNH server.
 
+## Requirements
+This mod was developed with the sole purpose of being used on a GT:NH server, and as such, will aim to work with the
+latest version of that pack (v2.7.2 as of writing).
+
 ## Features
 - Chat bridge between Discord and Minecraft
 - Discord commands:
@@ -8,9 +12,10 @@ A simple bridge between Discord and a Minecraft GTNH server.
   - `/leaderboard <stat>` - Show the leaderboard for a stat (ServerUtilities)
 - Global (Discord & In-game Chat) notifications of server events:
   - Player join/leave
-  - Deaths
+  - Player AFK (ServerUtilities)
+  - Player Deaths
   - Achievements
-  - Quests (BetterQuesting)
+  - Quest Completion (BetterQuesting)
   - Server start/stop
 
 ## Installation
