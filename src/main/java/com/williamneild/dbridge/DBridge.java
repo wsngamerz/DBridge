@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.williamneild.dbridge.commands.RelayReplyCommand;
 import com.williamneild.dbridge.listeners.PlayerAchievementListener;
+import com.williamneild.dbridge.listeners.PlayerAfkListener;
 import com.williamneild.dbridge.listeners.PlayerChatListener;
 import com.williamneild.dbridge.listeners.PlayerDeathListener;
 import com.williamneild.dbridge.listeners.PlayerJoinLeaveListener;
@@ -52,6 +53,7 @@ public class DBridge {
     public static final int RED = 15548997;
     public static final int GOLD = 15844367;
     public static final int PURPLE = 10181046;
+    public static final int GREY = 9807270;
 
     private boolean isEnabled = true;
     private MinecraftServer server;
@@ -94,6 +96,7 @@ public class DBridge {
         MinecraftForge.EVENT_BUS.register(new PlayerAchievementListener(this, this.server.getConfigurationManager()));
         MinecraftForge.EVENT_BUS.register(new PlayerDeathListener(this));
         MinecraftForge.EVENT_BUS.register(new PlayerQuestListener(this));
+        MinecraftForge.EVENT_BUS.register(new PlayerAfkListener(this));
         FMLCommonHandler.instance()
             .bus()
             .register(new PlayerJoinLeaveListener(this));
