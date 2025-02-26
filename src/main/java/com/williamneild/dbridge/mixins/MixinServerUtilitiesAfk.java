@@ -20,7 +20,8 @@ public class MixinServerUtilitiesAfk {
         method = "onServerTick",
         at = @At(
             value = "INVOKE",
-            target = "Lserverutils/ServerUtilitiesNotifications;sendAll(Lnet/minecraft/util/IChatComponent;)V",
+            // new MessageUpdateTabName(Collections.singleton(forgePlayer)).sendToAll();
+            target = "Lserverutils/net/MessageUpdateTabName;sendToAll()V",
             shift = At.Shift.AFTER,
             remap = false),
         remap = false)
