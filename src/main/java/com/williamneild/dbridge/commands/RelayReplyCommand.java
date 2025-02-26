@@ -1,5 +1,10 @@
 package com.williamneild.dbridge.commands;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -18,6 +23,11 @@ public class RelayReplyCommand extends CommandBase {
     @Override
     public String getCommandName() {
         return "relayReply";
+    }
+
+    @Override
+    public List<String> getCommandAliases() {
+        return Arrays.asList(new String[] {"rr"});
     }
 
     @Override
@@ -40,6 +50,9 @@ public class RelayReplyCommand extends CommandBase {
     public void processCommand(ICommandSender sender, String[] args) {
         if (args.length < 2) throw new CommandException("Invalid number of arguments");
 
-        relay.reply(args[0], sender.getCommandSenderName(), args[1]);
+        String message = Stream.of(args)
+            .skip(1)
+            .collect(Collectors.joining(" "));
+        relay.reply(args[0], sender.getCommandSenderName(), message);
     }
 }
